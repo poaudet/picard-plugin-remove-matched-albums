@@ -40,9 +40,15 @@ class RemoveCompleteOptionsPage(OptionsPage):
     TITLE = "Remove Complete Albums"
     PARENT = "plugins"
 
-    def __init__(self, api, parent=None):
-        self.api = api or _api
+    def __init__(self, *args, **kwargs):
+        # Use whichever argument is the Qt parent, ignoring the api argument.
+        parent = next(
+            (a for a in (*args, *kwargs.values())
+             if isinstance(a, QtWidgets.QWidget)),
+            None,
+        )
         super().__init__(parent)
+        self.api = _api
         layout = QtWidgets.QVBoxLayout(self)
         self.save_box = QtWidgets.QCheckBox(
             "Only remove albums that have no unsaved files"
