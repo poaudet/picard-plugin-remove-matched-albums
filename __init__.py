@@ -32,11 +32,26 @@ from picard.plugin3.api import (
 
 USER_GUIDE_URL = 'https://picard-plugins-user-guides.readthedocs.io/en/latest/remove_matched_albums/user_guide.html'
 
-OPTION = "only_remove_saved"
+OPTION = False
 LOG = "Remove Matched Albums:"
 
 _api = None  # set in enable()
 
+def _get_only_saved(api):
+    try:
+        value = api.plugin_config.get(OPTION, False)
+    except Exception as err:
+        api.logger.error(f"{LOG} could not read option: {err!r}")
+        return False
+    # config backends can hand booleans back as the strings "true"/"false"
+    return value is True or str(value).lower() == "true"
+
+
+def _set_only_saved(api, value):
+    try:
+        api.plugin_config[OPTION] = bool(value)
+    except Exception as err:
+        api.logger.error(f"{LOG} could not save option: {err!r}")
 
 class RemoveCompleteOptionsPage(OptionsPage):
     NAME = "remove_complete_albums"
@@ -65,14 +80,11 @@ class RemoveCompleteOptionsPage(OptionsPage):
         )
         layout.addWidget(self.save_box)
         layout.addStretch()
-
     def load(self):
-        self.save_box.setChecked(
-            self.api.global_config.setting.get(OPTION, False)
-        )
+        self.save_box.setChecked(_get_only_saved(self.api))
 
     def save(self):
-        self.api.global_config.setting[OPTION] = self.save_box.isChecked()
+        _set_only_saved(self.api, self.save_box.isChecked())
 
 
 class RemoveMatchedAlbums(BaseAction):
@@ -83,7 +95,7 @@ class RemoveMatchedAlbums(BaseAction):
         self.api = api or _api
 
     def callback(self, objs):
-        only_saved = self.api.global_config.setting.get(OPTION, False)
+        only_saved = _get_only_saved(self.api)
         removed = False
 
         for album in list(set(self.api.tagger.albums.values())):
@@ -108,7 +120,6 @@ class RemoveMatchedAlbums(BaseAction):
                 QtWidgets.QMessageBox.StandardButton.Ok,
                 QtWidgets.QMessageBox.StandardButton.Ok,
             )
-
 
 def enable(api: PluginApi):
     """Called when plugin is enabled."""
