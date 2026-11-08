@@ -131,11 +131,12 @@ def enable(api: PluginApi):
     _api = api
     api.logger.info(f"{LOG} enable() called")
     try:
-        api.plugin_config.register_option(OPTION, False)
+        api.plugin_config.register_option(OPTION, True)
     except Exception:
         api.logger.error(
             f"{LOG} register_option failed:\n{traceback.format_exc()}"
         )
+    api.register_options_page(RemoveCompleteOptionsPage)
     api.logger.info(f"{LOG} options page registered")
     api.register_tools_menu_action(RemoveMatchedAlbums)
     api.logger.info(f"{LOG} tools menu action registered")
