@@ -41,7 +41,7 @@ class RemoveCompleteOptionsPage(OptionsPage):
     PARENT = "plugins"
 
     def __init__(self, api, parent=None):
-        self.api = api
+        self.api = api or _api
         super().__init__(parent)
         layout = QtWidgets.QVBoxLayout(self)
         self.save_box = QtWidgets.QCheckBox(
@@ -64,7 +64,7 @@ class RemoveMatchedAlbums(BaseAction):
 
     def __init__(self, api=None):
         super().__init__()
-        self.api = api
+        self.api = api or _api
 
     def callback(self, objs):
         only_saved = self.api.global_config.setting.get(OPTION, False)
@@ -95,5 +95,7 @@ class RemoveMatchedAlbums(BaseAction):
 
 def enable(api: PluginApi):
     """Called when plugin is enabled."""
+    global _api
+    _api = api
     api.register_options_page(RemoveCompleteOptionsPage)
     api.register_tools_menu_action(RemoveMatchedAlbums)
