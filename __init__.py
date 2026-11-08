@@ -18,7 +18,6 @@
 # This plugin is based on the Picard 2 plugin "Remove Perfect Albums" by
 # ichneumon and hrglgrmpf.  See original code at
 # https://github.com/metabrainz/picard-plugins/blob/2.0/plugins/remove_perfect_albums/remove_perfect_albums.py
-import traceback
 from PyQt6 import QtWidgets
 
 from picard.plugin3.api import (
@@ -130,12 +129,8 @@ def enable(api: PluginApi):
     global _api
     _api = api
     api.logger.info(f"{LOG} enable() called")
-    try:
-        api.plugin_config.register_option(OPTION, True)
-    except Exception:
-        api.logger.error(
-            f"{LOG} register_option failed:\n{traceback.format_exc()}"
-        )
+    api.plugin_config.register_option(OPTION, True)
+    api.logger.info(f"{LOG} register_option registered}")
     api.register_options_page(RemoveCompleteOptionsPage)
     api.logger.info(f"{LOG} options page registered")
     api.register_tools_menu_action(RemoveMatchedAlbums)
