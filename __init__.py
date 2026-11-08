@@ -31,20 +31,43 @@ from picard.plugin3.api import (
 
 USER_GUIDE_URL = 'https://picard-plugins-user-guides.readthedocs.io/en/latest/remove_matched_albums/user_guide.html'
 
+OPTION = "remove_complete_save_first"
+BoolOption("plugins", OPTION, False)
+
+class RemoveCompleteOptionsPage(OptionsPage):
+    NAME = "remove_complete_albums"
+    TITLE = "Remove Complete Albums"
+    PARENT = "plugins"
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QtWidgets.QVBoxLayout(self)
+        self.save_box = QtWidgets.QCheckBox(
+            "Save complete albums before removing them")
+        layout.addWidget(self.save_box)
+        layout.addStretch()
+
+    def load(self):
+        self.save_box.setChecked(get_config().setting[OPTION])
+
+    def save(self):
+        get_config().setting[OPTION] = self.save_box.isChecked()
 
 class RemoveMatchedAlbums(BaseAction):
     TITLE = t_('ui.action.remove_albums.title', "Remove matched albums")
 
     def callback(self, objs):
+        save_first = get_config().setting[OPTION]
         removed = False
         albums = list(set(self.api.tagger.albums.values()))
         for album in albums:
             if not isinstance(album, Album):
                 continue
 
-            if album.loaded and album.is_complete() and album.get_num_unsaved_files() == 0:
-                removed = True
-                self.api.tagger.remove_album(album)
+            if album.loaded and album.is_complete():
+                if not save_first or album.get_num_unsaved_files() == 0:
+                    removed = True
+                    self.api.tagger.remove_album(album)
 
         if not removed:
             QtWidgets.QMessageBox.warning(
@@ -61,4 +84,5 @@ class RemoveMatchedAlbums(BaseAction):
 
 def enable(api: PluginApi):
     """Called when plugin is enabled."""
+    api.register_options_page(RemoveCompleteOptionsPage)
     api.register_tools_menu_action(RemoveMatchedAlbums)
