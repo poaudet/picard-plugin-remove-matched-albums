@@ -18,7 +18,7 @@
 # This plugin is based on the Picard 2 plugin "Remove Perfect Albums" by
 # ichneumon and hrglgrmpf.  See original code at
 # https://github.com/metabrainz/picard-plugins/blob/2.0/plugins/remove_perfect_albums/remove_perfect_albums.py
-
+import traceback
 from PyQt6 import QtWidgets
 
 from picard.plugin3.api import (
@@ -39,9 +39,11 @@ _api = None  # set in enable()
 
 def _get_only_saved(api):
     try:
-        value = api.plugin_config.get(OPTION, True)
-    except Exception as err:
-        api.logger.error(f"{LOG} could not read option: {err!r}")
+        value = api.plugin_config[OPTION]
+    except Exception:
+        api.logger.error(
+            f"{LOG} could not read option:\n{traceback.format_exc()}"
+        )
         return False
     # config backends can hand booleans back as the strings "true"/"false"
     return value is True or str(value).lower() == "true"
@@ -50,8 +52,10 @@ def _get_only_saved(api):
 def _set_only_saved(api, value):
     try:
         api.plugin_config[OPTION] = bool(value)
-    except Exception as err:
-        api.logger.error(f"{LOG} could not save option: {err!r}")
+    except Exception:
+        api.logger.error(
+            f"{LOG} could not save option:\n{traceback.format_exc()}"
+        )
 
 class RemoveCompleteOptionsPage(OptionsPage):
     NAME = "remove_complete_albums"
@@ -126,7 +130,12 @@ def enable(api: PluginApi):
     global _api
     _api = api
     api.logger.info(f"{LOG} enable() called")
-    api.register_options_page(RemoveCompleteOptionsPage)
+    try:
+        api.plugin_config.register_option(OPTION, False)
+    except Exception:
+        api.logger.error(
+            f"{LOG} register_option failed:\n{traceback.format_exc()}"
+        )
     api.logger.info(f"{LOG} options page registered")
     api.register_tools_menu_action(RemoveMatchedAlbums)
     api.logger.info(f"{LOG} tools menu action registered")
