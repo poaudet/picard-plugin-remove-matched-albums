@@ -22,17 +22,20 @@
 from PyQt6 import QtWidgets
 
 from picard.plugin3.api import (
-    Album,       # verify
+    Album,
     BaseAction,
     OptionsPage,
-    PluginApi,   # verify
-    t_,          # verify
+    PluginApi,
+    t_,
 )
 
 
 USER_GUIDE_URL = 'https://picard-plugins-user-guides.readthedocs.io/en/latest/remove_matched_albums/user_guide.html'
 
 OPTION = "only_remove_saved"
+LOG = "Remove Matched Albums:"
+
+_api = None  # set in enable()
 
 
 class RemoveCompleteOptionsPage(OptionsPage):
@@ -41,7 +44,8 @@ class RemoveCompleteOptionsPage(OptionsPage):
     PARENT = "plugins"
 
     def __init__(self, *args, **kwargs):
-        # Use whichever argument is the Qt parent, ignoring the api argument.
+        # Picard's calling convention for option pages is unclear: find the
+        # Qt parent by type and take the api object from enable().
         parent = next(
             (a for a in (*args, *kwargs.values())
              if isinstance(a, QtWidgets.QWidget)),
@@ -49,6 +53,12 @@ class RemoveCompleteOptionsPage(OptionsPage):
         )
         super().__init__(parent)
         self.api = _api
+        if _api:
+            _api.logger.info(
+                f"{LOG} options page created, "
+                f"args={[type(a).__name__ for a in args]}, "
+                f"kwargs={list(kwargs)}"
+            )
         layout = QtWidgets.QVBoxLayout(self)
         self.save_box = QtWidgets.QCheckBox(
             "Only remove albums that have no unsaved files"
@@ -76,7 +86,7 @@ class RemoveMatchedAlbums(BaseAction):
         only_saved = self.api.global_config.setting.get(OPTION, False)
         removed = False
 
-        for album in list(self.api.tagger.albums.values()):
+        for album in list(set(self.api.tagger.albums.values())):
             if not isinstance(album, Album):
                 continue
             if not (album.loaded and album.is_complete()):
@@ -88,10 +98,11 @@ class RemoveMatchedAlbums(BaseAction):
 
         if not removed:
             QtWidgets.QMessageBox.warning(
-                self.api.tagger.window,  # verify
-                t_("ui.dialog.no_albums.title", "No Albums"),
-                t_(
-                    "ui.dialog.no_albums.text",
+                self.api.tagger.window,
+                self.api.tr("ui.dialog.no_albums.title", "No Albums"),
+                # new key, so an old translation of the original text isn't shown
+                self.api.tr(
+                    "ui.dialog.nothing_removed.text",
                     "No albums were removed with the current option settings.",
                 ),
                 QtWidgets.QMessageBox.StandardButton.Ok,
@@ -103,5 +114,8 @@ def enable(api: PluginApi):
     """Called when plugin is enabled."""
     global _api
     _api = api
+    api.logger.info(f"{LOG} enable() called")
     api.register_options_page(RemoveCompleteOptionsPage)
+    api.logger.info(f"{LOG} options page registered")
     api.register_tools_menu_action(RemoveMatchedAlbums)
+    api.logger.info(f"{LOG} tools menu action registered")
