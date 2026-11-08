@@ -32,14 +32,14 @@ from picard.plugin3.api import (
 
 USER_GUIDE_URL = 'https://picard-plugins-user-guides.readthedocs.io/en/latest/remove_matched_albums/user_guide.html'
 
-OPTION = False
+OPTION = "only_remove_saved"
 LOG = "Remove Matched Albums:"
 
 _api = None  # set in enable()
 
 def _get_only_saved(api):
     try:
-        value = api.plugin_config.get(OPTION, False)
+        value = api.plugin_config.get(OPTION, True)
     except Exception as err:
         api.logger.error(f"{LOG} could not read option: {err!r}")
         return False
