@@ -22,60 +22,71 @@
 from PyQt6 import QtWidgets
 
 from picard.plugin3.api import (
-    Album,
+    Album,       # verify
     BaseAction,
-    PluginApi,
-    t_,
+    OptionsPage,
+    PluginApi,   # verify
+    t_,          # verify
 )
 
 
 USER_GUIDE_URL = 'https://picard-plugins-user-guides.readthedocs.io/en/latest/remove_matched_albums/user_guide.html'
 
-OPTION = "remove_complete_save_first"
-BoolOption("plugins", OPTION, False)
+OPTION = "only_remove_saved"
+
 
 class RemoveCompleteOptionsPage(OptionsPage):
     NAME = "remove_complete_albums"
     TITLE = "Remove Complete Albums"
     PARENT = "plugins"
 
-    def __init__(self, parent=None):
+    def __init__(self, api, parent=None):
+        self.api = api
         super().__init__(parent)
         layout = QtWidgets.QVBoxLayout(self)
         self.save_box = QtWidgets.QCheckBox(
-            "Save complete albums before removing them")
+            "Only remove albums that have no unsaved files"
+        )
         layout.addWidget(self.save_box)
         layout.addStretch()
 
     def load(self):
-        self.save_box.setChecked(get_config().setting[OPTION])
+        self.save_box.setChecked(
+            self.api.global_config.setting.get(OPTION, False)
+        )
 
     def save(self):
-        get_config().setting[OPTION] = self.save_box.isChecked()
+        self.api.global_config.setting[OPTION] = self.save_box.isChecked()
+
 
 class RemoveMatchedAlbums(BaseAction):
-    TITLE = t_('ui.action.remove_albums.title', "Remove matched albums")
+    TITLE = t_("ui.action.remove_albums.title", "Remove matched albums")
+
+    def __init__(self, api=None):
+        super().__init__()
+        self.api = api
 
     def callback(self, objs):
-        save_first = get_config().setting[OPTION]
+        only_saved = self.api.global_config.setting.get(OPTION, False)
         removed = False
-        albums = list(set(self.api.tagger.albums.values()))
-        for album in albums:
+
+        for album in list(self.api.tagger.albums.values()):
             if not isinstance(album, Album):
                 continue
-
-            if album.loaded and album.is_complete():
-                if not save_first or album.get_num_unsaved_files() == 0:
-                    removed = True
-                    self.api.tagger.remove_album(album)
+            if not (album.loaded and album.is_complete()):
+                continue
+            if only_saved and album.get_num_unsaved_files() > 0:
+                continue
+            self.api.tagger.remove_album(album)
+            removed = True
 
         if not removed:
             QtWidgets.QMessageBox.warning(
-                self.api.tagger.window,
-                self.api.tr('ui.dialog.no_albums.title', "No Albums"),
-                self.api.tr(
-                    'ui.dialog.no_albums.text',
-                    "There were no completely matched and saved albums found for removal.",
+                self.api.tagger.window,  # verify
+                t_("ui.dialog.no_albums.title", "No Albums"),
+                t_(
+                    "ui.dialog.no_albums.text",
+                    "No albums were removed with the current option settings.",
                 ),
                 QtWidgets.QMessageBox.StandardButton.Ok,
                 QtWidgets.QMessageBox.StandardButton.Ok,
