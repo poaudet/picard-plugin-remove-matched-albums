@@ -10,7 +10,10 @@ The plugin is based on the Picard v2 \"Remove Perfect Albums\" plugin by ichneum
 
 ## What it Does
 
-This plugin provides an action under the "Plugin Tools" section of Picard's manu menu. When clicked, each of the albums listed in the Albums pane is examined for possible removal. If the album is complete with all tracks matched to an audio file and all of the files have been saved, then the album is removed from the list.
+This plugin provides an action under the "Plugin Tools" section of Picard's manu menu. When clicked, each of the albums listed in the Albums pane is examined for possible removal. 
+
+### Option
+A checkbox is available in the pLugins options screen to allow you to only remove an the album if it is complete with all tracks matched to an audio file and all of the files have been saved.
 
 ---
 
