@@ -130,7 +130,7 @@ def enable(api: PluginApi):
     _api = api
     api.logger.info(f"{LOG} enable() called")
     api.plugin_config.register_option(OPTION, True)
-    api.logger.info(f"{LOG} register_option registered}")
+    api.logger.info(f"{LOG} register_option registered")
     api.register_options_page(RemoveCompleteOptionsPage)
     api.logger.info(f"{LOG} options page registered")
     api.register_tools_menu_action(RemoveMatchedAlbums)
